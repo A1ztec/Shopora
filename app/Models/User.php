@@ -3,10 +3,11 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enum\User\UserStatus;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; {
     class User extends Authenticatable
     {
         use HasFactory, Notifiable, HasApiTokens;
@@ -32,7 +33,7 @@ use Laravel\Sanctum\HasApiTokens; {
                 'email_verified_at' => 'datetime',
                 'password' => 'hashed',
                 'is_admin' => 'boolean',
-                'is_active' => 'boolean',
+                'status' => UserStatus::class,
             ];
         }
 
@@ -62,4 +63,4 @@ use Laravel\Sanctum\HasApiTokens; {
             return $this->hasMany(ShippingAddress::class);
         }
     }
-}
+
