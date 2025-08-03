@@ -44,8 +44,6 @@ class Auth extends Controller
                     'phone' => $formattedNumber,
                     'avatar' => $path,
                     'password' => Hash::make($data['password']),
-                    'verify_otp' => rand(100000, 999999),
-                    'email_otp_expires_at' => now()->addMinutes(10),
                     'status' => UserStatus::PENDING_VERIFICATION,
                 ]);
 
