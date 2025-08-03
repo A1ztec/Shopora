@@ -19,6 +19,8 @@ return new class extends Migration
             $table->text('comment')->nullable();
             $table->boolean('is_approved')->default(false);
             $table->timestamps();
+
+            $table->index(['is_approved']);
         });
     }
 
