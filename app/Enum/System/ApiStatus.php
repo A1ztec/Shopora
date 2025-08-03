@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Enums\System;
+namespace App\Enum\System;
 
 enum ApiStatus: string
 {
