@@ -2,107 +2,209 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Enum\User\UserStatus;
 use App\Models\User;
 use App\Enum\User\UserRole;
 use Illuminate\Http\Request;
+use App\Enum\User\UserStatus;
+use App\Traits\ApiResponseTrait;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
-use function App\Helpers\jsonResponse;
 use App\Http\Requests\User\RegisterRequest;
 use App\Http\Resources\Api\User\UserResource;
 use App\Http\Requests\User\VerifyEmailRequest;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use App\Http\Requests\User\ResetPasswordRequest;
 use App\Http\Requests\User\ReSendVerificationCode;
 use App\Services\FormatPhoneNumber as ServicesFormatPhoneNumber;
 
 class Auth extends Controller
 {
+    use ApiResponseTrait;
 
     public function __construct(protected ServicesFormatPhoneNumber $phoneFormatter) {}
 
     public function register(RegisterRequest $request)
     {
-        $data = $request->validated();
+        try {
+            return DB::transaction(function () use ($request) {
+                $data = $request->validated();
 
-        $formattedNumber = $this->phoneFormatter->formatPhoneNumber($data['phone']);
+                $formattedNumber = $this->phoneFormatter->formatPhoneNumber($data['phone']);
 
-        if (isset($data['avatar'])) {
-            $path = $data['avatar']->storeAs('profile/images', 'profile_' . time() . '.' . $data['avatar']->getClientOriginalExtension(), 's3');
+                $path = null;
+                if (isset($data['avatar'])) {
+                    $path = $data['avatar']->storeAs('profile/images', 'profile_' . time() . '.' . $data['avatar']->getClientOriginalExtension(), 's3');
+                }
+
+                $user = User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone' => $formattedNumber,
+                    'avatar' => $path,
+                    'password' => Hash::make($data['password']),
+                    'verify_otp' => rand(100000, 999999),
+                    'email_otp_expires_at' => now()->addMinutes(10),
+                    'status' => UserStatus::PENDING_VERIFICATION,
+                ]);
+
+                $resource = UserResource::make($user);
+
+                return $this->successResponse(
+                    data: $resource,
+                    message: __('User created successfully. Please check your email for verification.'),
+                    code: 201
+                );
+            });
+        } catch (\Exception $e) {
+            Log::error('User registration failed: ' . $e->getMessage());
+            return $this->errorResponse(__('Registration failed. Please try again.'));
         }
-
-        $user =  User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'phone' => $formattedNumber,
-            'avatar' => $path ?? null,
-            'password' => Hash::make($data['password']),
-            'verify_otp' => rand(100000, 999999),
-            'email_otp_expires_at' => now()->addMinutes(10),
-        ]);
-
-        $resource = UserResource::make($user);
-
-        return jsonResponse(message: __('user created successfully . Please check your email for verification.'), status: 'success', code: 201, data: $resource);
     }
 
-    public function reSendVerificationCode(ReSendVerificationCode  $request)
+    public function reSendVerificationCode(ReSendVerificationCode $request)
     {
+        try {
+            $data = $request->validated();
 
-        $data = $request->validated();
+            $user = User::where('email', $data['email'])->first();
 
-        $user = User::where('email', $data['email'])->first();
+            if (!$user) {
+                return $this->notFoundResponse(__('User not found'));
+            }
 
-        if (!$user) {
-            return jsonResponse(message: __('user not found'), status: 'error', code: 404);
+            if ($user->hasVerifiedEmail()) {
+                return $this->errorResponse(__('Email is already verified'), 400);
+            }
+
+            $user->generateAndSendVerificationCode();
+
+            return $this->successResponse(
+                message: __('Verification code sent successfully. Please check your email.')
+            );
+        } catch (\Exception $e) {
+            Log::error('Resend verification failed: ' . $e->getMessage());
+            return $this->errorResponse(__('Failed to send verification code'));
         }
-
-        $user->generateAndSendVerificationCode();
-
-        return jsonResponse(message: __('verification code sent successfully . Please check your email.'), status: 'success', code: 200);
     }
 
     public function verifyEmail(VerifyEmailRequest $request)
     {
-        $data = $request->validated();
+        try {
+            return DB::transaction(function () use ($request) {
+                $data = $request->validated();
 
-        $user = User::where('email', $data['email'])->first();
+                $user = User::where('email', $data['email'])->first();
 
-        if (!$user) {
-            return jsonResponse(message: __('user not found'), status: 'error', code: 404);
+                if (!$user) {
+                    return $this->notFoundResponse(__('User not found'));
+                }
+
+                if ($user->hasVerifiedEmail()) {
+                    return $this->errorResponse(__('Email is already verified'), 400);
+                }
+
+                if ($user->verify_otp !== $data['verification_code']) {
+                    return $this->errorResponse(__('Invalid verification code'), 422);
+                }
+
+                if (now()->greaterThan($user->email_otp_expires_at)) {
+                    return $this->errorResponse(__('OTP expired. Please request a new one.'), 410);
+                }
+
+                $user->markEmailAsVerified();
+                $user->verify_otp = null;
+                $user->email_otp_expires_at = null;
+                $user->status = UserStatus::ACTIVE;
+                $user->save();
+
+                return $this->successResponse(
+                    data: UserResource::make($user),
+                    message: __('Email verified successfully')
+                );
+            });
+        } catch (\Exception $e) {
+            Log::error('Email verification failed: ' . $e->getMessage());
+            return $this->errorResponse(__('Email verification failed'));
         }
-
-        if ($user->verify_otp !== $data['verification_code']) {
-            return jsonResponse(message: __('invalid verification code'), status: 'error', code: 422);
-        }
-
-        if (now()->greaterThan($user->email_otp_expires_at)) {
-            return jsonResponse(message: __('OTP expired. Please request a new one.'), status: 'error', code: 410);
-        }
-
-        $user->markEmailAsVerified();
-        $user->verify_otp = null;
-        $user->email_otp_expires_at = null;
-        $user->status = UserStatus::ACTIVE->value;
-
-
-        $user->save();
-
-        return jsonResponse(message: __('email verified successfully'), status: 'success', code: 200, data: UserResource::make($user));
     }
 
     public function sendResetPasswordCode(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
+        $request->validate(['email' => 'required|email|exists:users,email']);
 
-        $user = User::where('email', $request->email)->first();
+        try {
+            $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
-            return response()->json(['message' => 'User not found.'], 404);
+            if (!$user) {
+                return $this->notFoundResponse(__('User not found'));
+            }
+
+            // Rate limiting check - prevent spam requests
+            if (
+                $user->password_reset_expires_at &&
+                now()->lessThan($user->password_reset_expires_at->subMinutes(8))
+            ) {
+                return $this->errorResponse(
+                    __('Please wait before requesting another reset code.'),
+                    429
+                );
+            }
+
+            $user->sendPasswordResetCode();
+
+            return $this->successResponse(
+                message: __('Password reset code sent successfully. Please check your email.')
+            );
+        } catch (\Exception $e) {
+            Log::error('Password reset code failed: ' . $e->getMessage());
+            return $this->errorResponse(__('Failed to send password reset code'));
         }
+    }
 
-        $user->sendPasswordResetCode();
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        try {
+            return DB::transaction(function () use ($request) {
+                $data = $request->validated();
 
-        return jsonResponse(message: __('Password reset code sent successfully. Please check your email.'), status: 'success', code: 200);
+                $user = User::where('email', $data['email'])->first();
+
+                if (!$user) {
+                    return $this->notFoundResponse(__('User not found'));
+                }
+
+
+                if ($user->password_reset_code !== $data['reset_code']) {
+                    return $this->errorResponse(__('Invalid reset code'), 422);
+                }
+
+
+                if (
+                    !$user->password_reset_expires_at ||
+                    now()->greaterThan($user->password_reset_expires_at)
+                ) {
+                    return $this->errorResponse(__('Reset code expired. Please request a new one.'), 410);
+                }
+
+
+                $user->password = Hash::make($data['password']);
+                $user->password_reset_code = null;
+                $user->password_reset_expires_at = null;
+                $user->save();
+
+                $user->tokens()->delete();
+
+                Log::info('Password reset successful', ['user_id' => $user->id]);
+
+                return $this->successResponse(
+                    message: __('Password reset successfully. Please login with your new password.')
+                );
+            });
+        } catch (\Exception $e) {
+            Log::error('Password reset failed: ' . $e->getMessage());
+            return $this->errorResponse(__('Password reset failed. Please try again.'));
+        }
     }
 }
