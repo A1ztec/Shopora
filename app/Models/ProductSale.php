@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enum\Product\SaleType;
 use Illuminate\Database\Eloquent\Model;
 
 class ProductSale extends Model
@@ -14,6 +15,7 @@ class ProductSale extends Model
 
     protected $casts = [
         'value' => 'decimal:2',
+        'sale_type' => SaleType::class,
     ];
 
     public function product()
