@@ -4,21 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ShippingAddress extends Model
+class CouponUsage extends Model
 {
+    protected $table = 'coupon_usage';
+
     protected $fillable = [
+        'coupon_id',
         'user_id',
-        'full_name',
-        'phone_number',
-        'state',
-        'city',
-        'street_address',
-        'is_default',
+        'used_at',
     ];
 
     protected $casts = [
-        'is_default' => 'boolean',
+        'used_at' => 'date',
     ];
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
+    }
 
     public function user()
     {
