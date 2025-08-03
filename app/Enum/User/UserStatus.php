@@ -1,9 +1,7 @@
 <?php
 
 
-
-
-namespace App\Enums\User;
+namespace App\Enum\User;
 
 enum UserStatus: string
 {
