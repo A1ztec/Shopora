@@ -19,9 +19,11 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('status')->default('pending');
             $table->string('payment_method')->nullable();
-            $table->integer('coupon_id')->nullable();
+            $table->foreignId('coupon_id')->nullable()->constrained('coupons')->onDelete('set null');
             $table->decimal('discount_amount', 10, 2)->default(0);
             $table->timestamps();
+
+            $table->index(['status']);
         });
     }
 
