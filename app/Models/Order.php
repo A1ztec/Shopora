@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enum\Order\OrderStatus;
+use App\Enum\Order\PaymentMethod;
 
 class Order extends Model
 {
@@ -20,6 +22,8 @@ class Order extends Model
     protected $casts = [
         'total_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'status' => OrderStatus::class,
+        'payment_method' => PaymentMethod::class,
     ];
 
     public function user()
