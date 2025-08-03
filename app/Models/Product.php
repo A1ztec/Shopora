@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enum\Product\Gender;
+use App\Enum\Product\ProductStatus;
 
 class Product extends Model
 {
@@ -23,6 +25,8 @@ class Product extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'is_featured' => 'boolean',
+        'status' => ProductStatus::class,
+        'gender' => Gender::class,
     ];
 
     // Relationships
