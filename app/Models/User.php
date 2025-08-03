@@ -25,7 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'avatar',
         'password',
-        'role',
+        //'role',
         'status',
         'verify_otp',
         'email_otp_expires_at',
@@ -47,7 +47,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_otp_expires_at' => 'datetime',
             'password_reset_expires_at' => 'datetime',
             'password' => 'hashed',
-            'role' => UserRole::class,
+            // 'role' => UserRole::class,
             'status' => UserStatus::class,
         ];
     }
