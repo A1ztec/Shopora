@@ -20,8 +20,10 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'avatar' => Storage::disk('s3')->url($this->avatar),
-            'status' => $this->status,
+            'avatar' => $this->avatar ? Storage::disk('s3')->url($this->avatar) : null,
+            'status' => $this->status->value,
+            'status_title' => $this->status->title(),
+            'email_verified_at' => $this->email_verified_at,
         ];
     }
 }
