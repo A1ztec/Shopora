@@ -33,8 +33,8 @@ enum PaymentMethod: string
     public function isOnline(): bool
     {
         return match ($this) {
-            self::CREDIT_CARD, self::CASH_ON_DELIVERY, self::PHONE_WALLET => true,
-            self::DEBIT_CARD => false,
+            self::CREDIT_CARD, self::PHONE_WALLET, self::DEBIT_CARD=> true,
+             self::CASH_ON_DELIVERY => false,
         };
     }
 
