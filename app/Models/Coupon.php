@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enum\Discount\DiscountType;
 use Illuminate\Database\Eloquent\Model;
 
 class Coupon extends Model
@@ -19,6 +20,7 @@ class Coupon extends Model
         'discount_value' => 'decimal:2',
         'start_date' => 'date',
         'end_date' => 'date',
+        'discount_type' => DiscountType::class
     ];
 
     public function orders()
