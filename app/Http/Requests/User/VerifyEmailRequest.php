@@ -22,7 +22,7 @@ class VerifyEmailRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email', 'exists:user,email'],
+            'email' => ['required', 'email', 'exists:users,email'],
             'verification_code' => ['required', 'string', 'size:6'],
         ];
     }
