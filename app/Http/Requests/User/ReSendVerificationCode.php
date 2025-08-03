@@ -22,8 +22,8 @@ class ReSendVerificationCode extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required' , 'email' , 'exists:user,email'],
-            
+            'email' => ['required' , 'email' , 'exists:users,email'],
+
         ];
     }
 }
