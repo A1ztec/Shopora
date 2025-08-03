@@ -1,7 +1,7 @@
 <?php
 
-// app/Enums/ProductStatus.php
-namespace App\Enums;
+
+namespace App\Enum\Product;
 
 enum ProductStatus: string
 {
