@@ -31,6 +31,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_otp_expires_at',
         'password_reset_code',
         'password_reset_expires_at',
+        'facebook_id',
+        'google_id',
     ];
 
     protected $hidden = [
