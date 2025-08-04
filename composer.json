@@ -15,6 +15,7 @@
         "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.10.1",
         "league/flysystem-aws-s3-v3": "3.0",
+        "manadinho/lara-translate": "^1.1",
         "propaganistas/laravel-phone": "^6.0"
     },
     "require-dev": {
