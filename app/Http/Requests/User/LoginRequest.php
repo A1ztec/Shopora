@@ -11,7 +11,7 @@ class LoginRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -45,11 +45,11 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'identifier.required' => 'The identifier field is required.',
-            'identifier.string' => 'The identifier must be a string.',
-            'password.required' => 'The password field is required.',
-            'password.string' => 'The password must be a string.',
-            'remember_me.boolean' => 'The remember me field must be true or false.',
+            'identifier.required' => __('The identifier field is required.'),
+            'identifier.string' => __('The identifier must be a string.'),
+            'password.required' => __('The password field is required.'),
+            'password.string' => __('The password must be a string.'),
+            'remember_me.boolean' => __('The remember me field must be true or false.'),
         ];
     }
 }
