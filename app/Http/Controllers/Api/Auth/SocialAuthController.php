@@ -13,10 +13,7 @@ class SocialAuthController extends Controller
 {
     use ApiResponseTrait;
 
-    public function __construct(public FindOrCreateSocialAuth $socialAuthService)
-    {
-
-    }
+    public function __construct(public FindOrCreateSocialAuth $socialAuthService) {}
     public function auth(SocialAuthRequest $request)
     {
         $data = $request->validated();
@@ -38,7 +35,6 @@ class SocialAuthController extends Controller
         return $this->successResponse([
             'user' => $user,
             'token' => $token,
-        ] , message : __('Successfully authenticated with social provider'), code : 200);
-
+        ], message: __('Successfully authenticated with social provider'), code: 200);
     }
 }
