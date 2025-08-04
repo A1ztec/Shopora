@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('verify_otp')->nullable();
             $table->datetime('email_otp_expires_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
+            $table->string('facebook_id')->nullable();
+            $table->string('google_id')->nullable();
             $table->string('password_reset_otp')->nullable();
             $table->timestamp('password_reset_otp_expires_at')->nullable();
             $table->string('password');
