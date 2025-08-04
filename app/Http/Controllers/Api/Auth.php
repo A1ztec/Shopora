@@ -140,7 +140,7 @@ class Auth extends Controller
                 return $this->notFoundResponse(__('User not found'));
             }
 
-            // Rate limiting check - prevent spam requests
+            
             if (
                 $user->password_reset_expires_at &&
                 now()->lessThan($user->password_reset_expires_at->subMinutes(8))
@@ -283,7 +283,7 @@ class Auth extends Controller
             Log::info('User logged out successfully', ['user_id' => $user->id]);
 
             return $this->successResponse(message: __('Logged out successfully'));
-            
+
         } catch (\Exception $e) {
             Log::error('Logout failed: ' . $e->getMessage());
             return $this->errorResponse(__('Logout failed. Please try again.'));
