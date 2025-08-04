@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\User\LoginRequest;
 use App\Http\Requests\User\RegisterRequest;
 use App\Http\Resources\Api\User\UserResource;
 use App\Http\Requests\User\VerifyEmailRequest;
@@ -203,6 +204,89 @@ class Auth extends Controller
         } catch (\Exception $e) {
             Log::error('Password reset failed: ' . $e->getMessage());
             return $this->errorResponse(__('Password reset failed. Please try again.'));
+        }
+    }
+
+    public function login(LoginRequest $request)
+    {
+        try {
+            $data = $request->validated();
+
+            $loginField = filter_var($data['identifier'], FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+            $loginValue = $data['identifier'];
+            if ($loginField === 'phone') {
+                $loginValue = $this->phoneFormatter->formatPhoneNumber($data['identifier']);
+            }
+
+            $user = User::where($loginField, $loginValue)->first();
+
+            if (!$user) {
+                return $this->notFoundResponse(__('User not found'));
+            }
+            if (!Hash::check($data['password'], $user->password)) {
+                return $this->errorResponse(__('Invalid credentials'), 401);
+            }
+
+
+            if ($user->status !== UserStatus::ACTIVE) {
+                return $this->errorResponse(__('User account is not active'), 403);
+            }
+
+            if (!$user->hasVerifiedEmail()) {
+                return $this->errorResponse(message: __('Please verify your email address before logging in.'), code: 403, data: [
+                    'requires_verification' => true,
+                    'email' => $user->email,
+                ]);
+            }
+
+            $tokenName = 'auth_token_' . now()->timestamp;
+            $token = $user->createToken($tokenName)->plainTextToken;
+
+            $user->tokens()->delete();
+
+            Log::info('User logged in successfully', [
+                'user_id' => $user->id,
+                'tokenName' => $tokenName,
+                'loginField' => $loginField,
+                'request_ip' => request()->ip()
+            ]);
+
+            return $this->successResponse(
+                data: [
+                    'user' => UserResource::make($user),
+                    'token' => $token,
+                ],
+                message: __('Login successful'),
+                code: 200
+            );
+        } catch (\Exception $e) {
+            Log::error('Login failed: ' . $e->getMessage(), [
+                'identifier' => $data['identifier'],
+                'request_ip' => request()->ip()
+            ]);
+            return $this->errorResponse(__('Login failed. Please try again.'));
+        }
+    }
+
+    public function logout(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if(!$user){
+                return $this->errorResponse(__('User not authenticated'), 401);
+            }
+
+            $user->currentAccessToken()->delete();
+
+            Log::info('User logged out successfully', ['user_id' => $user->id]);
+
+            return $this->successResponse(message: __('Logged out successfully'));
+            
+        } catch (\Exception $e) {
+            Log::error('Logout failed: ' . $e->getMessage());
+            return $this->errorResponse(__('Logout failed. Please try again.'));
         }
     }
 }
