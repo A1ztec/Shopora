@@ -27,8 +27,6 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         'phone',
         'avatar',
         'password',
-        //'role',
-        'is_superAdmin',
         'status',
         'verify_otp',
         'email_otp_expires_at',
