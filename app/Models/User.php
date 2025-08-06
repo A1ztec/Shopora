@@ -9,15 +9,17 @@ use App\Mail\SendPasswordResetCode;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use App\Mail\SendEmailVerificationCode;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
     protected $fillable = [
         'name',
@@ -26,6 +28,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'avatar',
         'password',
         //'role',
+        'is_superAdmin',
         'status',
         'verify_otp',
         'email_otp_expires_at',
@@ -116,9 +119,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
 
 
-    public function isAdmin(): bool
+    public function isSuperAdmin(): bool
     {
-        return $this->role->isAdmin();
+        return $this->hasRole('super_admin');
     }
 
     public function canLogin(): bool
@@ -138,8 +141,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasPermission(string $permission): bool
     {
-        $permissions = $this->role->permissions();
-        return in_array('*', $permissions) || in_array($permission, $permissions);
+        return $this->hasPermissionTo($permission) || $this->isSuperAdmin();
     }
 
     // Scopes
@@ -156,5 +158,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopeAdmins($query)
     {
         return $query->whereIn('role', [UserRole::ADMIN, UserRole::SUPER_ADMIN, UserRole::MANAGER]);
+    }
+
+    public function canAccessPanel(\Filament\Panel $panel): bool
+    {
+
+        return $this->hasPermission('access_admin_panel') || $this->isSuperAdmin();
     }
 }
