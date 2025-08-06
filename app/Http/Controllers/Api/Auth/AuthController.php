@@ -234,10 +234,7 @@ class AuthController extends Controller
             }
 
             if (!$user->hasVerifiedEmail()) {
-                return $this->errorResponse(message: __('Please verify your email address before logging in.'), code: 403, data: [
-                    'requires_verification' => true,
-                    'email' => $user->email,
-                ]);
+                return $this->errorResponse(message: __('Please verify your email address before logging in.'), code: 403);
             }
 
             $tokenName = 'auth_token_' . now()->timestamp;
