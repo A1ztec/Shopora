@@ -65,7 +65,7 @@ enum UserStatus: string
         return match ($this) {
             self::ACTIVE => true,
             self::INACTIVE, self::SUSPENDED, self::PENDING_VERIFICATION, self::BANNED => false,
-        };
+        };  
     }
 
     public function icon(): string
