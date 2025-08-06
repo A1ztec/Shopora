@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('phone')->nullable();
+            $table->string('phone')->nullable()->unique();
             $table->string('avatar')->nullable();
             $table->string('verify_otp')->nullable();
             $table->datetime('email_otp_expires_at')->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('password_reset_otp')->nullable();
             $table->timestamp('password_reset_otp_expires_at')->nullable();
             $table->string('password');
-            $table->boolean('is_admin')->default(false);
+            $table->boolean('is_superAdmin')->default(false);
             $table->string('status')->default('pending_verification');
             $table->rememberToken();
             $table->timestamps();
