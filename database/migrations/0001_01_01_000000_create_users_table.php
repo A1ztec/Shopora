@@ -25,7 +25,6 @@ return new class extends Migration
             $table->string('password_reset_otp')->nullable();
             $table->timestamp('password_reset_otp_expires_at')->nullable();
             $table->string('password');
-            $table->boolean('is_superAdmin')->default(false);
             $table->string('status')->default('pending_verification');
             $table->rememberToken();
             $table->timestamps();
