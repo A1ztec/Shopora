@@ -11,7 +11,7 @@ abstract class BasePolicy
     public abstract function getModelName(): string;
 
 
-    public function viewAny(User $user, $model): bool
+    public function viewAny(User $user): bool
     {
         return $user->hasPermission('view_any_' . $this->getModelName()) || $user->isSuperAdmin();
     }
