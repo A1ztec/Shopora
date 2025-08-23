@@ -2,31 +2,38 @@
     "users" : [
         {
             "id": 1,
-            "name": "John Doe",
-            "email": "john@example.com" ,
-            "phone" : "+12025550173" ,
-            "role" : "admin" 
+            "name": "Super Admin",
+            "email": "admin@example.com",
+            "phone": "+201000000000",
+            "role": "super_admin"
         },
         {
             "id": 2,
-            "name": "Jane Smith",
-            "email": "jane@example.com" ,
-            "phone" : "+1234567890",
-            "role" : "user"
+            "name": "John Doe",
+            "email": "john@example.com" ,
+            "phone" : "+12025550173" ,
+            "role" : "admin"
         },
         {
             "id": 3,
-            "name": "Alice Johnson",
-            "email": "alice@example.com",
-            "phone" : "+201062512522",
-            "role" : "user"
+            "name": "Jane Smith",
+            "email": "jane@example.com" ,
+            "phone" : "+1234567890",
+            "role" : "customer"
         },
         {
             "id": 4,
+            "name": "Alice Johnson",
+            "email": "alice@example.com",
+            "phone" : "+201062512522",
+            "role" : "customer"
+        },
+        {
+            "id": 5,
             "name": "Bob Brown",
             "email": "bob@example.com",
             "phone" : "+201099964755",
-            "role" : "user"
+            "role" : "customer"
         }
     ]
 }
