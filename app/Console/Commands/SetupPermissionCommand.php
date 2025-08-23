@@ -48,16 +48,6 @@ class SetupPermissionCommand extends Command
         $this->info('Roles created successfully.');
 
 
-        $superAdminUser = User::firstOrCreate(['email' => 'admin@example.com'], [
-            'name' => 'Super Admin',
-            'password' => bcrypt('password'),
-        ]);
-
-        if (!$superAdminUser->hasRole('super_admin')) {
-            $superAdminUser->assignRole('super_admin');
-            $this->info('Super admin user created with email: admin@example.com');
-        }
-
         $this->info('Setup completed successfully.');
     }
 }
