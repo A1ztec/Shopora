@@ -14,7 +14,7 @@ class SocialAuthController extends Controller
     use ApiResponseTrait;
 
     public function __construct(public FindOrCreateSocialAuth $socialAuthService) {}
-    public function auth(SocialAuthRequest $request)
+    public function socialAuth(SocialAuthRequest $request)
     {
         $data = $request->validated();
 
