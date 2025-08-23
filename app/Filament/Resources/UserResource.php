@@ -52,7 +52,9 @@ class UserResource extends Resource
                         ->tel()
                         ->nullable()
                         ->rule(function (?User $record) {
-                            return ['nullable', Rule::unique('users', 'phone')->ignoreModel($record)];
+                            return $record
+                                ? ['nullable', Rule::unique('users', 'phone')->ignoreModel($record)]
+                                : ['nullable', Rule::unique('users', 'phone')];
                         })
                         ->maxLength(255)
                         ->placeholder('+1234567890'),
@@ -214,7 +216,6 @@ class UserResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('status', UserStatus::PENDING_VERIFICATION->value)
-            ->count();
+        return (string) static::getModel()::count();
     }
 }
