@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Enum\User\UserRole;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -108,5 +109,10 @@ class PermissionService
 
         ];
         $admin->givePermissionTo($adminPermissions);
+
+
+        foreach (UserRole::cases() as $role) {
+            Role::firstOrCreate(['name' => $role->value]);
+        }
     }
 }
