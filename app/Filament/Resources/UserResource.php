@@ -2,19 +2,38 @@
 
 namespace App\Filament\Resources;
 
-use App\Models\User;
 use Filament\Forms;
+use App\Models\User;
 use Filament\Tables;
 use Filament\Infolists;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Filament\Infolists\Infolist;
-use Filament\Facades\Filament;
-use Filament\Resources\Resource;
-use Illuminate\Validation\Rules\Password;
-use Illuminate\Validation\Rule;
-use App\Filament\Resources\UserResource\Pages;
+use App\Enum\User\UserRole;
 use App\Enum\User\UserStatus;
+use Filament\Facades\Filament;
+use Illuminate\Validation\Rule;
+use Filament\Infolists\Infolist;
+use Filament\Resources\Resource;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Section;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\TextInput;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Forms\Components\FileUpload;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rules\Password;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Tables\Actions\DeleteBulkAction;
+use App\Filament\Resources\UserResource\Pages;
+use Filament\Infolists\Components\Section as infoSection;
 
 class UserResource extends Resource
 {
@@ -33,21 +52,21 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make(__('Personal Information'))
+            Section::make(__('Personal Information'))
                 ->schema([
-                    Forms\Components\TextInput::make('name')
+                    TextInput::make('name')
                         ->label(__('Name'))
                         ->required()
                         ->maxLength(255),
 
-                    Forms\Components\TextInput::make('email')
+                    TextInput::make('email')
                         ->label(__('Email'))
                         ->email()
                         ->required()
                         ->maxLength(255)
                         ->unique(ignoreRecord: true),
 
-                    Forms\Components\TextInput::make('phone')
+                    TextInput::make('phone')
                         ->label(__('Phone'))
                         ->tel()
                         ->nullable()
@@ -59,7 +78,7 @@ class UserResource extends Resource
                         ->maxLength(255)
                         ->placeholder('+1234567890'),
 
-                    Forms\Components\FileUpload::make('avatar')
+                    FileUpload::make('avatar')
                         ->label(__('Avatar'))
                         ->image()
                         ->disk('s3')
@@ -69,18 +88,31 @@ class UserResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make(__('Account Settings'))
+            Section::make(__('Account Settings'))
                 ->schema([
-                    Forms\Components\Select::make('status')
-                        ->label(__('Status'))
-                        ->options(UserStatus::options())
+
+                    Select::make('role')
+                        ->label(__('Role'))
+                        ->options(function () {
+                            $currentUser = auth()->user();
+
+                            if ($currentUser->isSuperAdmin()) {
+                                return UserRole::options();
+                            }
+
+                            if ($currentUser->hasRole('admin')) {
+                                return ['customer' => __('Customer')];
+                            }
+
+                            return [];
+                        })
                         ->required()
-                        ->default(UserStatus::PENDING_VERIFICATION->value),
+                        ->default('customer'),
                 ]),
 
-            Forms\Components\Section::make(__('Password'))
+            Section::make(__('Password'))
                 ->schema([
-                    Forms\Components\TextInput::make('password')
+                    TextInput::make('password')
                         ->label(__('Password'))
                         ->password()
                         ->dehydrateStateUsing(fn($state) => bcrypt($state))
@@ -102,45 +134,50 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('avatar')
+                ImageColumn::make('avatar')
                     ->label(__('Avatar'))
                     ->disk('s3')
                     ->circular()
                     ->defaultImageUrl(fn($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name ?? 'User')),
 
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->label(__('Name'))
                     ->searchable()
                     ->sortable()
                     ->weight('medium'),
 
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('email')
                     ->label(__('Email'))
                     ->searchable()
                     ->sortable()
                     ->copyable(),
 
-                Tables\Columns\TextColumn::make('phone')
+                TextColumn::make('phone')
                     ->label(__('Phone'))
                     ->searchable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('roles.name')
+                    ->label(__('Roles'))
+                    ->badge(),
+
+
+                TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
                     ->color(fn($state) => $state instanceof UserStatus ? $state->color() : UserStatus::from($state)->color()),
 
-                Tables\Columns\IconColumn::make('email_verified_at')
+                IconColumn::make('email_verified_at')
                     ->label(__('Verified'))
                     ->boolean()
                     ->getStateUsing(fn($record) => filled($record->email_verified_at)),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->label(__('Status'))
                     ->options(UserStatus::options()),
 
-                Tables\Filters\TernaryFilter::make('email_verified')
+                TernaryFilter::make('email_verified')
                     ->label(__('Email Verified'))
                     ->queries(
                         true: fn($query) => $query->whereNotNull('email_verified_at'),
@@ -148,13 +185,13 @@ class UserResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('verify_emails')
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('verify_emails')
                         ->label(__('Verify Emails'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
@@ -177,29 +214,29 @@ class UserResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make(__('User Information'))
+            infoSection::make(__('User Information'))
                 ->schema([
-                    Infolists\Components\ImageEntry::make('avatar')
+                    ImageEntry::make('avatar')
                         ->disk('s3')
                         ->defaultImageUrl(fn($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name ?? 'User'))
                         ->label(__('Avatar'))
                         ->circular(),
 
-                    Infolists\Components\TextEntry::make('name')->label(__('Name')),
-                    Infolists\Components\TextEntry::make('email')->copyable()->label(__('Email')),
-                    Infolists\Components\TextEntry::make('phone')->label(__('Phone')),
+                    TextEntry::make('name')->label(__('Name')),
+                    TextEntry::make('email')->copyable()->label(__('Email')),
+                    TextEntry::make('phone')->label(__('Phone')),
 
-                    Infolists\Components\TextEntry::make('status')
+                    TextEntry::make('status')
                         ->label(__('Status'))
                         ->badge()
                         ->color(fn(UserStatus $state) => $state->color()),
                 ]),
 
-            Infolists\Components\Section::make(__('Account Dates'))
+            infoSection::make(__('Account Dates'))
                 ->schema([
-                    Infolists\Components\TextEntry::make('email_verified_at')->label(__('Email Verified At'))->dateTime(),
-                    Infolists\Components\TextEntry::make('created_at')->label(__('Created At'))->dateTime(),
-                    Infolists\Components\TextEntry::make('updated_at')->label(__('Updated At'))->dateTime(),
+                    TextEntry::make('email_verified_at')->label(__('Email Verified At'))->dateTime(),
+                    TextEntry::make('created_at')->label(__('Created At'))->dateTime(),
+                    TextEntry::make('updated_at')->label(__('Updated At'))->dateTime(),
                 ])
                 ->columns(3),
         ]);
@@ -218,8 +255,19 @@ class UserResource extends Resource
     {
         return (string) static::getModel()::count();
     }
-    public static function canViewAny(): bool
+
+    public static function getEloquentQuery(): Builder
     {
-        return auth()->user()->can('viewAny', User::class);
+        $query =  parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user->isSuperAdmin()) {
+            return $query;
+        }
+        if ($user->hasRole('admin')) {
+            return  $query->whereHas('roles', fn($q) => $q->where('name', 'customer'));
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 }
