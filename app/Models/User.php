@@ -55,13 +55,8 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         ];
     }
 
-    // Accessors
-    public function getAvatarUrlAttribute(): ?string
-    {
-        return Cache::remember("user_avatar_{$this->id}", 3600, function () {
-            return $this->avatar ? Storage::disk('s3')->url($this->avatar) : null;
-        });
-    }
+
+
 
     // Relationships
     public function cart()
@@ -161,6 +156,16 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
 
-        return $this->hasPermission('access_admin_panel') || $this->isSuperAdmin();
+        return $this->hasPermission('access_admin_panel');
+    }
+
+    // Accessors
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!empty($this->avatar)) {
+            return Storage::disk('s3')->url($this->avatar);
+        }
+        $name =  urlencode($this->name ?? 'U');
+        return "https://ui-avatars.com/api/?name={$name}&length=2&background=random&color=fff&size=128&rounded=true";
     }
 }
