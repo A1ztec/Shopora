@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Gate::before(function ($user) {
-            return $user->isSuperAdmin();
+            return $user->isSuperAdmin() ? true : null;
         });
     }
 }
