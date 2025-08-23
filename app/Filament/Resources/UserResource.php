@@ -218,4 +218,8 @@ class UserResource extends Resource
     {
         return (string) static::getModel()::count();
     }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('viewAny', User::class);
+    }
 }
