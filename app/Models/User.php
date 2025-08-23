@@ -6,16 +6,17 @@ use App\Enum\User\UserRole;
 use App\Enum\User\UserStatus;
 use Laravel\Sanctum\HasApiTokens;
 use App\Mail\SendPasswordResetCode;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\Traits\HasRoles;
 use App\Mail\SendEmailVerificationCode;
-use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Notifications\Notifiable;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 {
@@ -156,7 +157,17 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
 
-        return $this->hasPermission('access_admin_panel');
+        $canAccess = $this->hasPermission('access_admin_panel') || $this->hasAnyRole(['super_admin', 'admin']);
+        Log::channel('filament')->info('Panel access check', [
+            'user_id' => $this->id,
+            'user_email' => $this->email,
+            'can_access' => $canAccess,
+            'permissions' => $this->getAllPermissions()->pluck('name'),
+            'roles' => $this->getRoleNames(),
+            'middleware_stack' => request()->route()?->middleware() ?? 'no middleware info'
+        ]);
+
+        return $canAccess;
     }
 
     // Accessors
